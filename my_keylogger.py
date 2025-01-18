@@ -8,6 +8,9 @@ import base64
 import sys
 import random
 
+"""
+Create arg parser
+"""
 PATH_ON_GITHUB = f"data/"
 USER = os.getlogin()
 
